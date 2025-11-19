@@ -1,0 +1,162 @@
+# ============================================================================
+# Factor Registry Configuration
+# ============================================================================
+# This file defines all factors available in the multi-factor framework
+# Designed to be extensible for future factor additions (e.g., factor3)
+
+# ============================================================================
+# Active Factors
+# ============================================================================
+
+factors:
+  # Factor 1: Market Manipulation Score
+  manip:
+    name: "ManipScore"
+    description: "Market manipulation detection factor based on microstructure anomalies"
+    source_project: "market-manimpulation-analysis"
+    enabled: true
+    
+    # Column names in source data
+    columns:
+      raw: "ManipScore"
+      z_score: "ManipScore_z"
+    
+    # Factor properties
+    properties:
+      type: "anomaly_detection"
+      direction: "reversal"  # High ManipScore → expect reversal
+      timeframes: ["4H", "1D"]
+      asset_classes: ["commodity", "crypto"]
+    
+    # Normalization settings
+    normalization:
+      method: "z_score"
+      window: 200
+      min_periods: 50
+  
+  # Factor 2: Order Flow Imbalance
+  ofi:
+    name: "OFI"
+    description: "Order flow imbalance factor measuring buy/sell pressure"
+    source_project: "Order-Flow-Imbalance-analysis"
+    enabled: true
+    
+    # Column names in source data
+    columns:
+      raw: "OFI"
+      z_score: "OFI_z"
+      abs_z_score: "OFI_abs_z"  # Absolute value of z-score
+    
+    # Factor properties
+    properties:
+      type: "order_flow"
+      direction: "momentum"  # Positive OFI → buying pressure → potential continuation
+      timeframes: ["4H", "8H", "1D"]
+      asset_classes: ["crypto", "commodity", "forex"]
+    
+    # Normalization settings
+    normalization:
+      method: "z_score"
+      window: 200
+      min_periods: 50
+  
+  # Factor 3: Placeholder for future factor
+  # Example: Liquidity stress, volume surprise, etc.
+  factor3:
+    name: "Factor3"
+    description: "Placeholder for third factor (e.g., liquidity stress, volume surprise)"
+    source_project: "TBD"
+    enabled: false  # Not yet implemented
+    
+    columns:
+      raw: "factor3_raw"
+      z_score: "factor3_z"
+    
+    properties:
+      type: "TBD"
+      direction: "TBD"
+      timeframes: ["4H"]
+      asset_classes: ["crypto", "commodity", "forex"]
+    
+    normalization:
+      method: "z_score"
+      window: 200
+      min_periods: 50
+
+# ============================================================================
+# Factor Combination Rules
+# ============================================================================
+
+combinations:
+  # Two-factor combinations
+  manip_ofi:
+    factors: ["manip", "ofi"]
+    description: "ManipScore + OFI joint analysis"
+    enabled: true
+    
+    # Interaction hypothesis
+    hypothesis: |
+      High ManipScore indicates manipulation/anomaly.
+      OFI_abs_z filters out extreme one-sided order flow.
+      Combining both may improve signal quality.
+    
+    # Recommended strategies
+    strategies:
+      - name: "filter"
+        description: "Use OFI to filter, ManipScore to signal"
+      - name: "score"
+        description: "Weighted combination of both factors"
+  
+  # Three-factor combination (future)
+  manip_ofi_factor3:
+    factors: ["manip", "ofi", "factor3"]
+    description: "Three-factor joint analysis"
+    enabled: false  # Not yet implemented
+    
+    hypothesis: "TBD"
+    strategies:
+      - name: "score"
+        description: "Weighted combination of three factors"
+
+# ============================================================================
+# Factor Computation Settings
+# ============================================================================
+
+computation:
+  # Whether to recompute z-scores if not present in source data
+  recompute_z_scores: true
+  
+  # Whether to compute absolute z-scores
+  compute_abs_z: true
+  
+  # Whether to compute factor ranks
+  compute_ranks: true
+  
+  # Rank method: "average", "min", "max", "first", "dense"
+  rank_method: "average"
+  
+  # Whether to winsorize extreme values
+  winsorize: true
+  winsorize_limits: [0.01, 0.99]  # Clip at 1st and 99th percentile
+
+# ============================================================================
+# Factor Validation Rules
+# ============================================================================
+
+validation:
+  # Maximum allowed missing rate
+  max_missing_rate: 0.2  # 20%
+  
+  # Minimum required observations
+  min_observations: 100
+  
+  # Check for stationarity
+  check_stationarity: false  # Optional, can be slow
+  
+  # Check for outliers
+  check_outliers: true
+  outlier_threshold: 5.0  # z-score threshold
+  
+  # Warn if correlation between factors is too high
+  max_factor_correlation: 0.8
+

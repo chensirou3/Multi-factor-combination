@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data files (DO NOT commit data)
+data/external/
+data/intermediate/
+data/cache/
+*.parquet
+*.csv
+*.h5
+*.hdf5
+
+# Results (DO NOT commit large result files)
+results/logs/*.log
+results/backtests/*.csv
+results/stats/*.csv
+results/figures/*.png
+results/figures/*.jpg
+
+# Keep directory structure
+!data/external/.gitkeep
+!data/intermediate/.gitkeep
+!data/cache/.gitkeep
+!results/logs/.gitkeep
+!results/stats/.gitkeep
+!results/backtests/.gitkeep
+!results/figures/.gitkeep
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+.cache/
+
+# OS
+Thumbs.db
+.DS_Store
+

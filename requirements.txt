@@ -1,0 +1,17 @@
+# Core dependencies
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Data I/O
+pyarrow>=12.0.0  # For parquet support
+pyyaml>=6.0
+
+# Visualization (optional, for future use)
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Development (optional)
+jupyter>=1.0.0
+ipython>=8.0.0
+

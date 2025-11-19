@@ -1,0 +1,106 @@
+# ============================================================================
+# External Project Paths Configuration
+# ============================================================================
+# 
+# IMPORTANT: Before using this config, ensure both external projects exist:
+#   1. Order-Flow-Imbalance-analysis (OFI factor project)
+#      GitHub: https://github.com/chensirou3/Order-Flow-Imbalance-analysis
+#   
+#   2. market-manimpulation-analysis (ManipScore factor project)
+#      GitHub: https://github.com/chensirou3/market-manimpulation-analysis
+#
+# If not present, clone them:
+#   git clone https://github.com/chensirou3/Order-Flow-Imbalance-analysis.git
+#   git clone https://github.com/chensirou3/market-manimpulation-analysis.git
+#
+# ============================================================================
+
+# Root directories of external projects (absolute paths for server)
+manip_project_root: "/home/ubuntu/market-manimpulation-analysis"
+ofi_project_root: "/home/ubuntu/Order-Flow-Imbalance-analysis"
+
+# ============================================================================
+# 4H Factor Data Paths
+# ============================================================================
+# 
+# TODO: These paths need to be verified and updated based on actual data location
+# 
+# Based on GitHub repo inspection:
+# - OFI project stores merged bars in: results/{SYMBOL}_{TIMEFRAME}_merged_bars_with_ofi.csv
+# - ManipScore project stores bars in: results/bars_{TIMEFRAME}_with_manipscore_full.csv
+#
+# However, the actual file naming and location may differ. Please check:
+#   1. Navigate to each project's results/ or data/ directory
+#   2. Look for 4H aggregated factor data (parquet or csv)
+#   3. Update the glob patterns below accordingly
+#
+# ============================================================================
+
+# OFI 4H factor data location
+# Expected columns: timestamp, open, high, low, close, volume, OFI, OFI_z, fut_ret_*
+# Pattern examples:
+#   - results/{symbol}_4H_merged_bars_with_ofi.csv
+#   - data/bars/{symbol}/4H/*.parquet
+ofi_4h_data_pattern: "${ofi_project_root}/results/{symbol}_4H_merged_bars_with_ofi.csv"
+
+# ManipScore 4H factor data location
+# Expected columns: timestamp, open, high, low, close, ManipScore, ManipScore_z
+# NOTE: This file does not exist yet - needs to be generated from tick data
+# Will be created by running ManipScore calculation scripts
+manip_4h_data_pattern: "${manip_project_root}/results/{symbol}_4h_manipscore.csv"
+
+# ============================================================================
+# Internal Data Paths (within this project)
+# ============================================================================
+
+# Merged factor data output directory
+merged_4h_dir: "data/intermediate/merged_4h"
+
+# Cache directory for temporary data
+cache_dir: "data/cache"
+
+# Logs directory
+logs_dir: "results/logs"
+
+# Stats output directory
+stats_dir: "results/stats"
+
+# Backtest results directory
+backtests_dir: "results/backtests"
+
+# Figures output directory
+figures_dir: "results/figures"
+
+# ============================================================================
+# Data Format Specifications
+# ============================================================================
+
+# Expected time column names (will try these in order)
+time_column_candidates:
+  - "timestamp"
+  - "time"
+  - "datetime"
+  - "date"
+
+# Expected OHLCV column names
+ohlcv_columns:
+  open: "open"
+  high: "high"
+  low: "low"
+  close: "close"
+  volume: "volume"
+
+# OFI factor column names
+ofi_columns:
+  ofi_raw: "OFI"
+  ofi_z: "OFI_z"
+  ofi_abs_z: "OFI_abs_z"  # May need to compute if not present
+
+# ManipScore column names
+manip_columns:
+  manip_score: "ManipScore"
+  manip_score_z: "ManipScore_z"  # May need to compute if not present
+
+# Future return column patterns (regex)
+future_return_pattern: "fut_ret_\\d+"
+

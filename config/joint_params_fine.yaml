@@ -1,0 +1,158 @@
+# ============================================================================
+# Joint Factor Strategy Parameters - FINE GRID
+# ============================================================================
+# Higher granularity parameter grid for comprehensive analysis
+
+# ============================================================================
+# Filter Mode Parameters - FINE GRID
+# ============================================================================
+
+filter_mode:
+  # OFI filter thresholds - more granular
+  ofi_abs_z_max:
+    - 0.3   # Very strict
+    - 0.5   # Strict
+    - 0.75  # Moderate-strict
+    - 1.0   # Moderate
+    - 1.25  # Moderate-relaxed
+    - 1.5   # Relaxed
+    - 1.75  # Very relaxed
+    - 2.0   # Extremely relaxed
+  
+  # ManipScore signal thresholds - more granular
+  manip_z_entry:
+    - 1.0   # Weak signal
+    - 1.25  # Weak-moderate
+    - 1.5   # Moderate
+    - 1.75  # Moderate-strong
+    - 2.0   # Strong
+    - 2.25  # Strong-very strong
+    - 2.5   # Very strong
+    - 2.75  # Very strong-extreme
+    - 3.0   # Extreme
+    - 3.5   # Ultra extreme
+  
+  # Holding period - more options
+  holding_bars:
+    - 1     # 4H
+    - 2     # 8H
+    - 3     # 12H
+    - 4     # 16H
+    - 5     # 20H
+    - 6     # 24H (1 day)
+    - 8     # 32H
+    - 10    # 40H
+  
+  direction_logic:
+    - "reversal"
+
+# ============================================================================
+# Score Mode Parameters - FINE GRID
+# ============================================================================
+
+score_mode:
+  # Factor weights - more granular combinations
+  weights:
+    # Single factor baselines
+    - [1.0, 0.0]    # ManipScore only
+    - [0.0, 1.0]    # OFI only
+    
+    # ManipScore dominant (60-90%)
+    - [0.9, 0.1]
+    - [0.8, 0.2]
+    - [0.7, 0.3]
+    - [0.6, 0.4]
+    
+    # Balanced (40-60%)
+    - [0.5, 0.5]
+    - [0.4, 0.6]
+    
+    # OFI dominant (60-90%)
+    - [0.3, 0.7]
+    - [0.2, 0.8]
+    - [0.1, 0.9]
+    
+    # Hedge strategies (negative correlation)
+    - [1.0, -0.25]
+    - [1.0, -0.5]
+    - [1.0, -0.75]
+    - [1.0, -1.0]
+    - [0.8, -0.4]
+    - [0.6, -0.3]
+  
+  # Composite score entry threshold - more granular
+  composite_z_entry:
+    - 1.0
+    - 1.25
+    - 1.5
+    - 1.75
+    - 2.0
+    - 2.25
+    - 2.5
+    - 2.75
+    - 3.0
+  
+  # Holding period - same as filter mode
+  holding_bars:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 8
+    - 10
+  
+  direction_logic:
+    - "reversal"
+
+# ============================================================================
+# Risk Management Parameters
+# ============================================================================
+
+risk_management:
+  cost_bps:
+    - 5     # 0.05% per trade (crypto/forex)
+    - 7     # 0.07% per trade
+    - 10    # 0.10% per trade (conservative)
+  
+  stop_loss_atr:
+    - null
+  
+  take_profit_atr:
+    - null
+  
+  atr_window: 20
+
+# ============================================================================
+# Backtest Settings
+# ============================================================================
+
+backtest:
+  initial_capital: 10000.0
+  position_sizing: "fixed"
+  fixed_position_size: 1.0
+  min_observations: 200
+
+# ============================================================================
+# Analysis Settings
+# ============================================================================
+
+analysis:
+  n_quantiles: 10  # More granular quantile analysis
+  rolling_corr_window: 100
+  future_return_horizons:
+    - 1
+    - 2
+    - 3
+    - 5
+    - 8
+    - 10
+  
+  double_sort:
+    primary_factor: "ManipScore_z"
+    secondary_factor: "OFI_abs_z"
+    n_groups_primary: 5
+    n_groups_secondary: 3
+    primary_extreme_threshold: 1.5
+

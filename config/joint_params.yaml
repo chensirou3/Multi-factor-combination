@@ -1,0 +1,155 @@
+# ============================================================================
+# Joint Factor Strategy Parameters
+# ============================================================================
+
+# ============================================================================
+# Filter Mode Parameters
+# ============================================================================
+# Filter mode: Use one factor to filter, another to generate signals
+# Example: Only trade when |OFI_abs_z| < threshold (filter out extreme OFI),
+#          then use ManipScore for direction
+
+filter_mode:
+  # OFI filter thresholds (filter out extreme order flow imbalance)
+  ofi_abs_z_max:
+    - 0.5   # Very conservative: only trade in balanced order flow
+    - 1.0   # Moderate
+    - 1.5   # Relaxed
+    - 2.0   # Very relaxed
+  
+  # ManipScore signal thresholds (for entry)
+  manip_z_entry:
+    - 1.5   # Moderate manipulation signal
+    - 2.0   # Strong manipulation signal
+    - 2.5   # Very strong manipulation signal
+    - 3.0   # Extreme manipulation signal
+  
+  # Holding period (in bars)
+  holding_bars:
+    - 1     # Exit next bar
+    - 2     # Hold 2 bars (8H for 4H timeframe)
+    - 3     # Hold 3 bars (12H)
+    - 5     # Hold 5 bars (20H ~ 1 day)
+  
+  # Trading direction logic
+  # "reversal": High ManipScore → expect reversal → short
+  # "continuation": High ManipScore → expect continuation → long
+  direction_logic:
+    - "reversal"
+    # - "continuation"  # Can test later
+
+# ============================================================================
+# Score Mode Parameters
+# ============================================================================
+# Score mode: Combine multiple factors into a composite score
+# Example: Joint_Score = w1 * ManipScore_z + w2 * OFI_z
+
+score_mode:
+  # Factor weights for composite score
+  # Format: [w_manip, w_ofi]
+  weights:
+    - [1.0, 0.0]    # ManipScore only (baseline)
+    - [0.0, 1.0]    # OFI only (baseline)
+    - [0.7, 0.3]    # ManipScore dominant
+    - [0.5, 0.5]    # Equal weight
+    - [0.3, 0.7]    # OFI dominant
+    - [1.0, -0.5]   # ManipScore long, OFI hedge
+    - [1.0, -1.0]   # ManipScore long, OFI strong hedge
+  
+  # Composite score entry threshold
+  composite_z_entry:
+    - 1.5
+    - 2.0
+    - 2.5
+  
+  # Holding period (in bars)
+  holding_bars:
+    - 1
+    - 2
+    - 3
+    - 5
+  
+  # Trading direction
+  direction_logic:
+    - "reversal"
+    # - "continuation"
+
+# ============================================================================
+# Risk Management Parameters
+# ============================================================================
+
+risk_management:
+  # Transaction cost (basis points)
+  cost_bps:
+    - 5     # 0.05% per trade (round-trip = 0.1%)
+    - 7     # 0.07% per trade
+    - 10    # 0.10% per trade
+  
+  # Stop-loss (in ATR multiples, optional)
+  stop_loss_atr:
+    - null  # No stop-loss
+    # - 1.0   # 1 ATR stop-loss
+    # - 2.0   # 2 ATR stop-loss
+  
+  # Take-profit (in ATR multiples, optional)
+  take_profit_atr:
+    - null  # No take-profit
+    # - 2.0   # 2 ATR take-profit
+    # - 3.0   # 3 ATR take-profit
+  
+  # ATR window for stop-loss/take-profit calculation
+  atr_window: 20
+
+# ============================================================================
+# Backtest Settings
+# ============================================================================
+
+backtest:
+  # Initial capital
+  initial_capital: 10000.0
+  
+  # Position sizing method
+  # "fixed": Fixed position size
+  # "volatility": Size inversely proportional to volatility
+  position_sizing: "fixed"
+  
+  # Fixed position size (fraction of capital)
+  fixed_position_size: 1.0
+  
+  # Minimum number of observations required before trading
+  min_observations: 200
+
+# ============================================================================
+# Analysis Settings
+# ============================================================================
+
+analysis:
+  # Number of quantiles for factor binning
+  n_quantiles: 5
+  
+  # Rolling window for correlation analysis
+  rolling_corr_window: 100
+  
+  # Future return horizons to analyze (in bars)
+  future_return_horizons:
+    - 1
+    - 2
+    - 5
+    - 10
+  
+  # Double-sort analysis settings
+  double_sort:
+    # Primary factor (for first sort)
+    primary_factor: "ManipScore_z"
+    
+    # Secondary factor (for second sort within primary groups)
+    secondary_factor: "OFI_abs_z"
+    
+    # Number of groups for each sort
+    n_groups_primary: 3    # Low, Medium, High ManipScore
+    n_groups_secondary: 2  # Low, High OFI_abs_z
+    
+    # Threshold for "extreme" primary factor
+    # Only do secondary sort when |primary| > threshold
+    primary_extreme_threshold: 1.5
+

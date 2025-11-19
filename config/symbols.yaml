@@ -1,0 +1,77 @@
+# ============================================================================
+# Symbols and Timeframes Configuration
+# ============================================================================
+
+# List of symbols to analyze
+# NOTE: Data availability may vary by symbol:
+#   - OFI project has: BTCUSD, ETHUSD, EURUSD, USDJPY, XAGUSD, XAUUSD
+#   - ManipScore project primarily has: XAUUSD (and possibly BTCUSD, ETHUSD)
+#
+# Start with symbols that have both factors available
+symbols:
+  - BTCUSD
+  - ETHUSD
+  - XAUUSD
+  - XAGUSD
+  - EURUSD
+  # - GBPUSD  # Add if data becomes available
+  # - USDJPY  # Add if data becomes available
+
+# Timeframes to analyze
+# Currently focusing on 4H as it's the primary timeframe for both projects
+timeframes:
+  - "4H"
+  # Future expansion:
+  # - "8H"
+  # - "1D"
+
+# Symbol metadata (for reference and future use)
+symbol_info:
+  BTCUSD:
+    asset_class: "crypto"
+    description: "Bitcoin vs USD"
+    tick_size: 0.01
+    
+  ETHUSD:
+    asset_class: "crypto"
+    description: "Ethereum vs USD"
+    tick_size: 0.01
+    
+  XAUUSD:
+    asset_class: "commodity"
+    description: "Gold vs USD"
+    tick_size: 0.01
+    
+  XAGUSD:
+    asset_class: "commodity"
+    description: "Silver vs USD"
+    tick_size: 0.001
+    
+  EURUSD:
+    asset_class: "forex"
+    description: "Euro vs USD"
+    tick_size: 0.00001
+    
+  GBPUSD:
+    asset_class: "forex"
+    description: "British Pound vs USD"
+    tick_size: 0.00001
+    
+  USDJPY:
+    asset_class: "forex"
+    description: "USD vs Japanese Yen"
+    tick_size: 0.001
+
+# Asset class groupings (for regime analysis)
+asset_classes:
+  crypto:
+    - BTCUSD
+    - ETHUSD
+  commodity:
+    - XAUUSD
+    - XAGUSD
+  forex:
+    - EURUSD
+    - GBPUSD
+    - USDJPY
+
