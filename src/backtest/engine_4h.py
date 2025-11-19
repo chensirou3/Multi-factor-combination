@@ -37,32 +37,99 @@ class BacktestResult:
         return "\n".join(lines)
 
 
+def subset_df_by_date(
+    df: pd.DataFrame,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    time_col: str = 'time'
+) -> pd.DataFrame:
+    """
+    Filter DataFrame by date range
+
+    Args:
+        df: Input DataFrame
+        start_date: Start date (inclusive), format: 'YYYY-MM-DD'
+        end_date: End date (inclusive), format: 'YYYY-MM-DD'
+        time_col: Name of time column
+
+    Returns:
+        Filtered DataFrame
+    """
+    df_filtered = df.copy()
+
+    # Ensure time column is datetime
+    if time_col in df_filtered.columns:
+        if not pd.api.types.is_datetime64_any_dtype(df_filtered[time_col]):
+            df_filtered[time_col] = pd.to_datetime(df_filtered[time_col])
+    elif df_filtered.index.name == time_col or time_col == 'index':
+        # Time is in index
+        if not pd.api.types.is_datetime64_any_dtype(df_filtered.index):
+            df_filtered.index = pd.to_datetime(df_filtered.index)
+    else:
+        logger.warning(f"Time column '{time_col}' not found, skipping date filtering")
+        return df_filtered
+
+    # Apply filters
+    if start_date is not None:
+        start_dt = pd.to_datetime(start_date)
+        if time_col in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered[time_col] >= start_dt]
+        else:
+            df_filtered = df_filtered[df_filtered.index >= start_dt]
+        logger.info(f"Filtered data from {start_date}, rows: {len(df_filtered)}")
+
+    if end_date is not None:
+        end_dt = pd.to_datetime(end_date)
+        if time_col in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered[time_col] <= end_dt]
+        else:
+            df_filtered = df_filtered[df_filtered.index <= end_dt]
+        logger.info(f"Filtered data to {end_date}, rows: {len(df_filtered)}")
+
+    return df_filtered
+
+
 def run_simple_holding_backtest(
     df: pd.DataFrame,
     signal_col: str = 'signal',
     holding_bars: Optional[int] = None,
     cost_bps: float = 5.0,
     initial_capital: float = 10000.0,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
 ) -> BacktestResult:
     """
     Run simple holding period backtest
-    
+
     Logic:
     1. Enter position when signal != 0
     2. Hold for specified number of bars
     3. Exit and compute return
     4. Apply transaction costs
-    
+
     Args:
         df: DataFrame with signals and OHLC data
         signal_col: Column name for signals (+1, -1, 0)
         holding_bars: Number of bars to hold (if None, use df['holding_bars'])
         cost_bps: Transaction cost in basis points (one-way)
         initial_capital: Initial capital
-        
+        start_date: Optional start date for filtering (format: 'YYYY-MM-DD')
+        end_date: Optional end date for filtering (format: 'YYYY-MM-DD')
+
     Returns:
         BacktestResult object
     """
+    # Apply date filtering if specified
+    if start_date is not None or end_date is not None:
+        df = subset_df_by_date(df, start_date, end_date)
+        if len(df) == 0:
+            logger.warning("No data after date filtering!")
+            return BacktestResult(
+                equity_curve=pd.Series([initial_capital]),
+                trades=pd.DataFrame(),
+                stats={'n_trades': 0},
+            )
+
     df = df.copy()
     
     # Get holding period

@@ -241,6 +241,249 @@ if |OFI_z| < θ_ofi:
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-11-19
+## Phase OOS & Robustness
+
+### Out-of-Sample (OOS) Validation
+
+**Why OOS Matters**:
+
+In quantitative trading, the biggest risk is **overfitting** - finding patterns that work perfectly on historical data but fail in live trading. OOS validation addresses this by:
+
+1. **Time-based splits**: Train on early data, test on recent data
+2. **Parameter selection**: Choose parameters from train set only
+3. **Validation**: Evaluate on unseen test set data
+4. **Reality check**: Test set performance approximates future live performance
+
+**OOS Framework**:
+
+```
+Full Dataset: 2010-2025 (15 years)
+    ↓
+Split by time
+    ↓
+Train Set (early period)     Test Set (recent period)
+    ↓                              ↓
+Run all parameter combos      Run selected params only
+    ↓                              ↓
+Select top K or plateau       Evaluate performance
+    ↓                              ↓
+Train Sharpe: 0.8            Test Sharpe: 0.5 (realistic)
+```
+
+**Time Splits** (configured in `config/oos_splits.yaml`):
+
+- **Crypto (BTC, ETH)**:
+  - Train: 2017-2020 (4 years)
+  - Test: 2021-2025 (5 years)
+  - Rationale: Crypto markets mature quickly, recent data more relevant
+
+- **Traditional (XAU, XAG, EUR)**:
+  - Train: 2010-2018 (9 years)
+  - Test: 2019-2025 (7 years)
+  - Rationale: Longer history for stable markets
+
+**Implementation**:
+
+```python
+# Load OOS configuration
+oos_config = load_oos_splits_config()
+splits = oos_config['symbols']['BTCUSD']
+
+# Train set backtest
+train_results = []
+for params in param_grid:
+    result = run_backtest(df, params,
+                         start_date=splits['train_start'],
+                         end_date=splits['train_end'])
+    train_results.append(result)
+
+# Select top parameters
+top_params = select_top_k(train_results, k=20)
+
+# Test set validation
+test_results = []
+for params in top_params:
+    result = run_backtest(df, params,
+                         start_date=splits['test_start'],
+                         end_date=splits['test_end'])
+    test_results.append(result)
+```
+
+### Parameter Plateau Analysis
+
+**Why Plateau Matters**:
+
+A single "best" parameter may be:
+- **Overfit**: Works perfectly on train data by chance
+- **Unstable**: Small changes in parameters cause large performance swings
+- **Unreliable**: Unlikely to maintain performance out-of-sample
+
+A **parameter plateau** indicates:
+- **Robustness**: Multiple similar parameters perform well
+- **Stability**: Performance is smooth across parameter space
+- **True edge**: Signal is real, not data mining artifact
+
+**Plateau Definition**:
+
+```
+Plateau = {params | Sharpe(params) ≥ sharpe_frac × Sharpe_max}
+
+where:
+- Sharpe_max = maximum Sharpe ratio in train set
+- sharpe_frac = threshold fraction (default: 0.7)
+```
+
+**Example**:
+
+```
+Train set results:
+- Max Sharpe: 1.0
+- Plateau threshold: 0.7 × 1.0 = 0.7
+- Plateau size: 50 parameter sets with Sharpe ≥ 0.7
+
+Test set results (plateau params):
+- Mean Sharpe: 0.5
+- Median Sharpe: 0.48
+- Sharpe > 0 ratio: 85%
+- Sharpe degradation: 1.0 - 0.5 = 0.5
+
+Interpretation:
+✅ Robust: 85% of plateau params still profitable OOS
+✅ Stable: Median close to mean (low variance)
+⚠️ Degradation: 50% Sharpe loss (typical for OOS)
+```
+
+**Single Best vs Plateau Comparison**:
+
+| Metric | Single Best | Plateau (50 params) |
+|--------|-------------|---------------------|
+| Train Sharpe | 1.0 | 0.85 (mean) |
+| Test Sharpe | 0.3 | 0.5 (mean) |
+| Test Sharpe > 0 | 100% (1/1) | 85% (42/50) |
+| Interpretation | Likely overfit | More robust |
+
+**Implementation**:
+
+```python
+from src.analysis.oos_plateau_analysis import analyze_plateau_stability
+
+# Analyze plateau stability
+analysis = analyze_plateau_stability(
+    train_df=train_results,
+    test_df=test_results,
+    sharpe_frac=0.7
+)
+
+print(f"Plateau size: {analysis['plateau_size']}")
+print(f"Test mean Sharpe: {analysis['plateau_test_mean_sharpe']:.3f}")
+print(f"Sharpe > 0 ratio: {analysis['plateau_test_sharpe_gt0_ratio']:.1%}")
+```
+
+### Core Combo Tracking
+
+**Discovered Pattern**:
+
+From fine grid backtest (v1.0), we discovered an optimal weight pattern:
+- `w_manip = 0.6`
+- `w_ofi = -0.3`
+
+This "hedge strategy" (positive ManipScore weight, negative OFI weight) performed best on 4/5 symbols.
+
+**OOS Validation**:
+
+To validate this discovery, we track this specific weight combination across all z-thresholds and holding periods:
+
+```python
+# Core combo parameters
+core_weights = (0.6, -0.3)
+
+# Test across all z and holding combinations
+for z in [1.5, 2.0, 2.5, 3.0, 3.5, 4.0]:
+    for hold in [1, 2, 3, 4, 5, 6, 8, 10]:
+        params = {
+            'w_manip': 0.6,
+            'w_ofi': -0.3,
+            'composite_z_entry': z,
+            'holding_bars': hold
+        }
+
+        # Train and test
+        train_result = run_backtest(df, params, train_period)
+        test_result = run_backtest(df, params, test_period)
+
+        # Save to core_combo results
+```
+
+**Output**: `results/oos/score_oos_core_combo_{SYMBOL}_4H.csv`
+
+This allows us to answer:
+- Is the (0.6, -0.3) pattern robust OOS?
+- Which z-threshold and holding period work best with these weights?
+- Does the pattern generalize across symbols?
+
+### Robustness Metrics
+
+**Key Metrics** (computed by `summarize_oos_results.py`):
+
+1. **Test Set Sharpe Distribution**:
+   - Mean, median, std, min, max
+   - Percentiles (25th, 75th)
+   - Indicates stability and variance
+
+2. **Positive Sharpe Ratios**:
+   - Sharpe > 0 ratio
+   - Sharpe > 0.3 ratio
+   - Sharpe > 0.5 ratio
+   - Indicates reliability
+
+3. **Sharpe Degradation**:
+   - Train mean - Test mean
+   - Train median - Test median
+   - Indicates overfitting degree
+
+4. **Plateau Stability**:
+   - Plateau size (train)
+   - Plateau test performance
+   - Plateau Sharpe > 0 ratio
+   - Indicates parameter robustness
+
+**Interpretation Guidelines**:
+
+| Metric | Good | Acceptable | Poor |
+|--------|------|------------|------|
+| Test mean Sharpe | > 0.5 | > 0.3 | < 0.3 |
+| Sharpe > 0 ratio | > 80% | > 60% | < 60% |
+| Sharpe degradation | < 0.3 | < 0.5 | > 0.5 |
+| Plateau size | > 30 | > 15 | < 15 |
+
+### OOS Workflow
+
+**Complete OOS Process**:
+
+```bash
+# Step 1: Run OOS backtest for all symbols
+python scripts/run_score_oos_all.py
+
+# Step 2: Summarize results with plateau analysis
+python scripts/summarize_oos_results.py
+
+# Step 3: Review results
+# - results/oos/score_oos_train_{SYMBOL}_4H.csv
+# - results/oos/score_oos_test_{SYMBOL}_4H.csv
+# - results/oos/score_oos_core_combo_{SYMBOL}_4H.csv
+# - results/oos/score_oos_plateau_analysis_per_symbol.csv
+# - results/oos/score_oos_summary_overall.csv
+```
+
+**Decision Making**:
+
+Based on OOS results, decide:
+1. **Deploy**: If test Sharpe > 0.3 and Sharpe > 0 ratio > 70%
+2. **Refine**: If degradation > 0.5, consider simpler model
+3. **Reject**: If test Sharpe < 0 or Sharpe > 0 ratio < 50%
+
+---
+
+**Document Version**: 1.1
+**Last Updated**: 2025-01-19
 

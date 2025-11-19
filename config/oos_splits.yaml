@@ -1,0 +1,50 @@
+# Out-of-Sample (OOS) Time Splits Configuration
+# Defines train/test periods for each symbol
+
+symbols:
+  BTCUSD:
+    timeframe: "4H"
+    train_start: "2017-01-01"
+    train_end:   "2020-12-31"
+    test_start:  "2021-01-01"
+    test_end:    "2025-12-31"
+    description: "BTC: 4 years train (2017-2020), 5 years test (2021-2025)"
+
+  ETHUSD:
+    timeframe: "4H"
+    train_start: "2017-01-01"
+    train_end:   "2020-12-31"
+    test_start:  "2021-01-01"
+    test_end:    "2025-12-31"
+    description: "ETH: 4 years train (2017-2020), 5 years test (2021-2025)"
+
+  XAUUSD:
+    timeframe: "4H"
+    train_start: "2010-01-01"
+    train_end:   "2018-12-31"
+    test_start:  "2019-01-01"
+    test_end:    "2025-12-31"
+    description: "Gold: 9 years train (2010-2018), 7 years test (2019-2025)"
+
+  XAGUSD:
+    timeframe: "4H"
+    train_start: "2010-01-01"
+    train_end:   "2018-12-31"
+    test_start:  "2019-01-01"
+    test_end:    "2025-12-31"
+    description: "Silver: 9 years train (2010-2018), 7 years test (2019-2025)"
+
+  EURUSD:
+    timeframe: "4H"
+    train_start: "2010-01-01"
+    train_end:   "2018-12-31"
+    test_start:  "2019-01-01"
+    test_end:    "2025-12-31"
+    description: "EUR/USD: 9 years train (2010-2018), 7 years test (2019-2025)"
+
+# Configuration notes:
+# - Crypto (BTC, ETH): Shorter history, split at 2021 (COVID era boundary)
+# - Traditional assets (XAU, XAG, EUR): Longer history, split at 2019
+# - Train/test ratio approximately 50-60% train, 40-50% test
+# - All dates are inclusive
+

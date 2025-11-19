@@ -149,15 +149,63 @@ def load_factors_config() -> Dict[str, Any]:
 def get_enabled_factors() -> list[str]:
     """
     Get list of enabled factor names
-    
+
     Returns:
         List of enabled factor names
     """
     config = load_factors_config()
     factors = config.get('factors', {})
-    
+
     return [
         name for name, spec in factors.items()
         if spec.get('enabled', False)
     ]
+
+
+def load_oos_splits_config() -> Dict[str, Any]:
+    """
+    Load out-of-sample (OOS) time splits configuration
+
+    Returns:
+        OOS splits configuration dictionary
+
+    Raises:
+        FileNotFoundError: If config file not found
+        ValueError: If date validation fails
+    """
+    import pandas as pd
+
+    project_root = get_project_root()
+    config_path = project_root / "config" / "oos_splits.yaml"
+
+    config = load_yaml(config_path)
+
+    # Validate each symbol's time splits
+    symbols = config.get('symbols', {})
+    for symbol, splits in symbols.items():
+        # Check required fields
+        required_fields = ['timeframe', 'train_start', 'train_end', 'test_start', 'test_end']
+        for field in required_fields:
+            if field not in splits:
+                raise ValueError(f"Missing required field '{field}' for symbol {symbol}")
+
+        # Validate date format and ordering
+        try:
+            train_start = pd.to_datetime(splits['train_start'])
+            train_end = pd.to_datetime(splits['train_end'])
+            test_start = pd.to_datetime(splits['test_start'])
+            test_end = pd.to_datetime(splits['test_end'])
+
+            # Check ordering
+            if train_start >= train_end:
+                raise ValueError(f"{symbol}: train_start must be before train_end")
+            if test_start >= test_end:
+                raise ValueError(f"{symbol}: test_start must be before test_end")
+            if train_end >= test_start:
+                raise ValueError(f"{symbol}: train_end must be before test_start (no overlap)")
+
+        except Exception as e:
+            raise ValueError(f"Invalid date format for symbol {symbol}: {e}")
+
+    return config
 

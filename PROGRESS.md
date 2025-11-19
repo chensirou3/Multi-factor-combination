@@ -2,9 +2,9 @@
 
 ## 项目概述
 
-**项目名称**: ManipScore-OFI 联合因子分析框架  
-**创建日期**: 2025-11-19  
-**当前版本**: v1.0 - 精细网格回测完成
+**项目名称**: ManipScore-OFI 联合因子分析框架
+**创建日期**: 2025-11-19
+**当前版本**: v1.1 - OOS 样本外验证与稳健性分析
 
 本项目整合了两个独立的市场微观结构因子：
 - **ManipScore**: 市场操纵检测因子（反转逻辑）
@@ -29,7 +29,7 @@
 - `src/analysis/` - 性能分析
 - `src/backtest/` - 回测引擎
 
-**可执行脚本** (7个):
+**可执行脚本** (11个):
 - `scripts/generate_manipscore_4h.py` - 从 OHLCV 生成 ManipScore
 - `scripts/build_merged_data.py` - 合并 ManipScore 和 OFI 数据
 - `scripts/run_joint_filter_grid.py` - Filter 模式网格搜索
@@ -37,6 +37,10 @@
 - `scripts/run_all_symbols_fine_grid.py` - 批量运行所有品种
 - `scripts/analyze_fine_grid_results.py` - 结果分析
 - `scripts/count_configs.py` - 参数配置统计
+- `scripts/run_score_oos_per_symbol.py` - Score 模式单品种 OOS 回测 ✨NEW
+- `scripts/run_score_oos_all.py` - Score 模式批量 OOS 回测 ✨NEW
+- `scripts/summarize_oos_results.py` - OOS 结果汇总与高原分析 ✨NEW
+- `scripts/run_filter_oos_per_symbol.py` - Filter 模式 OOS 骨架 ✨NEW
 
 ### 2. 数据准备 ✅
 
@@ -199,8 +203,73 @@ data/intermediate/merged_4h/
 
 ---
 
+## 🆕 v1.1 新增功能 (2025-01-19)
+
+### 6. 样本外 (OOS) 验证框架 ✅
+
+**时间分割配置**:
+- 新增配置文件: `config/oos_splits.yaml`
+- 加密货币: 训练集 2017-2020 (4年), 测试集 2021-2025 (5年)
+- 传统资产: 训练集 2010-2018 (9年), 测试集 2019-2025 (7年)
+
+**回测引擎增强**:
+- 扩展 `src/backtest/engine_4h.py` 支持时间过滤
+- 新增 `subset_df_by_date()` 函数
+- 新增 `start_date` 和 `end_date` 参数
+
+**OOS 脚本 (Score 模式)**:
+- `run_score_oos_per_symbol.py` - 单品种 OOS 回测
+  - 训练集: 运行全部参数网格
+  - 参数选择: Top K 或高原区 (Sharpe ≥ 70% × max)
+  - 测试集: 验证选定参数
+  - 核心组合跟踪: 特别跟踪 (0.6, -0.3) 权重组合
+- `run_score_oos_all.py` - 批量运行所有品种
+- `summarize_oos_results.py` - 汇总分析与高原稳健性
+
+**Filter 模式预留**:
+- `run_filter_oos_per_symbol.py` - 骨架实现（待完成）
+
+### 7. 参数稳健性分析 ✅
+
+**高原分析模块**:
+- 新增 `src/analysis/oos_plateau_analysis.py`
+- 核心函数:
+  - `analyze_plateau_stability()` - 高原稳定性分析
+  - `compare_single_best_vs_plateau()` - 单点最优 vs 高原对比
+
+**稳健性指标**:
+- 测试集 Sharpe 分布 (均值、中位数、标准差、分位数)
+- 正 Sharpe 比例 (> 0, > 0.3, > 0.5)
+- Sharpe 衰减率 (训练集均值 - 测试集均值)
+- 高原区大小和稳定性
+
+**核心组合跟踪**:
+- 特别跟踪发现的最优权重组合 (w_manip=0.6, w_ofi=-0.3)
+- 单独输出文件: `score_oos_core_combo_{SYMBOL}_4H.csv`
+- 覆盖所有 z 阈值和持仓周期组合
+
+### 8. 文档更新 ✅
+
+**README.md**:
+- 新增 OOS 使用指南
+- 新增高原分析说明
+- 更新项目结构
+- 更新结果文件列表
+
+**CHANGELOG.md**:
+- 新增 v1.1.0 版本记录
+- 详细列出 OOS 功能和技术细节
+
+**PROGRESS.md**:
+- 更新版本号至 v1.1
+- 新增 OOS 模块说明
+- 更新项目统计
+
+---
+
 ## 项目统计
 
+### v1.0 (精细网格回测)
 - **代码文件**: 20+ Python 模块
 - **配置文件**: 4 个 YAML
 - **脚本文件**: 7 个可执行脚本
@@ -208,8 +277,39 @@ data/intermediate/merged_4h/
 - **数据点**: 96,303 个 4H bars
 - **总耗时**: 47.1 分钟
 
+### v1.1 (OOS & 稳健性分析)
+- **新增代码文件**: 2 个 (oos_plateau_analysis.py, 扩展 engine_4h.py)
+- **新增配置文件**: 1 个 (oos_splits.yaml)
+- **新增脚本文件**: 4 个 (3 个 Score OOS + 1 个 Filter 骨架)
+- **总代码文件**: 22+ Python 模块
+- **总配置文件**: 5 个 YAML
+- **总脚本文件**: 11 个可执行脚本
+
 ---
 
-**最后更新**: 2025-11-19  
-**状态**: ✅ 精细网格回测完成，准备下一阶段测试
+## 下一步计划
+
+### Phase 3: 可视化与分析 (v1.2)
+- [ ] 权益曲线图 (训练集 vs 测试集)
+- [ ] 参数热力图 (Sharpe vs 参数组合)
+- [ ] 月度/年度收益分布
+- [ ] 回撤分析图
+- [ ] 高原区可视化
+
+### Phase 4: 策略优化 (v1.3)
+- [ ] 动态止损/止盈
+- [ ] 仓位管理 (Kelly Criterion)
+- [ ] 市场状态过滤 (波动率、趋势)
+- [ ] 多周期分析 (1H, 8H, 1D)
+
+### Phase 5: 实盘准备 (v2.0)
+- [ ] 纸面交易模拟
+- [ ] 滑点和交易成本建模
+- [ ] 实时数据接口
+- [ ] 风险管理系统
+
+---
+
+**最后更新**: 2025-01-19
+**状态**: ✅ OOS 样本外验证框架完成，准备运行测试
 
