@@ -321,3 +321,81 @@ def normalize_manip_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+
+def load_merged_4h_data(symbol: str, timeframe: str = "4H") -> pd.DataFrame:
+    """
+    Load merged 4H data (OFI + ManipScore) for a symbol
+
+    This function loads the pre-merged data file created by build_merged_data.py
+
+    Args:
+        symbol: Trading symbol (e.g., 'BTCUSD', 'ETHUSD')
+        timeframe: Timeframe string (default: '4H')
+
+    Returns:
+        DataFrame with merged factor data
+
+    Raises:
+        FileNotFoundError: If merged data file not found
+
+    Example:
+        >>> df = load_merged_4h_data('BTCUSD')
+        >>> print(df.columns)
+        Index(['time', 'open', 'high', 'low', 'close', 'volume',
+               'OFI', 'OFI_z', 'ManipScore', 'ManipScore_z'])
+    """
+    from ..utils.config_loader import get_project_root
+
+    logger.info(f"Loading merged 4H data for {symbol}")
+
+    # Get project root
+    project_root = get_project_root()
+
+    # Construct file path
+    merged_dir = project_root / "data" / "intermediate" / "merged_4h"
+
+    # Try different possible file names
+    possible_files = [
+        merged_dir / f"{symbol}_{timeframe}_merged.parquet",
+        merged_dir / f"{symbol}_{timeframe.lower()}_merged.parquet",
+        merged_dir / f"{symbol}_merged.parquet",
+    ]
+
+    file_path = None
+    for path in possible_files:
+        if path.exists():
+            file_path = path
+            break
+
+    if file_path is None:
+        raise FileNotFoundError(
+            f"Merged data file not found for {symbol}. Tried:\n" +
+            "\n".join(f"  - {p}" for p in possible_files) +
+            f"\n\nPlease run: python scripts/build_merged_data.py"
+        )
+
+    logger.info(f"Loading from: {file_path}")
+
+    # Load data
+    df = read_parquet(file_path)
+
+    # Ensure time column is datetime
+    if 'time' in df.columns:
+        if not pd.api.types.is_datetime64_any_dtype(df['time']):
+            df['time'] = pd.to_datetime(df['time'])
+    elif df.index.name == 'time' or isinstance(df.index, pd.DatetimeIndex):
+        if not pd.api.types.is_datetime64_any_dtype(df.index):
+            df.index = pd.to_datetime(df.index)
+
+    logger.info(f"Loaded merged data: {len(df)} rows, {len(df.columns)} columns")
+    logger.debug(f"Columns: {list(df.columns)}")
+
+    # Validate required columns
+    required_cols = ['OFI', 'OFI_z', 'ManipScore', 'ManipScore_z']
+    missing_cols = [col for col in required_cols if col not in df.columns]
+
+    if missing_cols:
+        logger.warning(f"Missing expected columns: {missing_cols}")
+
+    return df
+

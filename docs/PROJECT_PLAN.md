@@ -205,16 +205,95 @@ composite_z = (
 
 ## Timeline Estimate
 
-- **Phase 1**: ✅ Complete
-- **Phase 2**: 1-2 days (data integration and validation)
-- **Phase 3**: 1 day (analysis)
-- **Phase 4**: 1 day (backtesting)
-- **Phase 5**: 1-2 days (optimization and factor3)
+- **Phase 1**: ✅ Complete (Initial framework)
+- **Phase 2**: ✅ Complete (Data integration and validation)
+- **Phase 3**: ✅ Complete (Analysis)
+- **Phase 4**: ✅ Complete (Backtesting)
+- **Phase 5**: ✅ Complete (Fine grid optimization)
+- **Phase 6**: ✅ Complete (OOS validation)
+- **Phase 7**: 🔄 In Progress (ETH core strategy)
 
 **Total**: ~5-7 days for full implementation
 
 ---
 
-**Document Version**: 1.0  
+## Phase 7: ETH Core Strategy (v1.2)
+
+**Status**: 🔄 In Progress
+**Goal**: Develop simplified, robust strategy focused on ETHUSD
+
+### Background
+
+Based on Phase 6 OOS results:
+- ✅ ETHUSD was the only symbol with positive test set Sharpe (0.370)
+- ❌ Other symbols (XAUUSD, XAGUSD, EURUSD) failed OOS validation
+- ⚠️ Severe overfitting detected (train Sharpe 1.2 → test Sharpe -0.27)
+- ✅ Core weight combo (0.6, -0.3) showed best robustness
+
+### Strategy Design
+
+**Core Assumptions**:
+1. **Fixed weights**: `w_manip = 0.6, w_ofi = -0.3` (validated from OOS)
+2. **Single symbol**: ETHUSD only (best performer)
+3. **Reduced parameter space**: 30 configs (vs 1,224)
+   - `z_threshold`: [1.5, 2.0, 2.25, 2.5, 2.75, 3.0]
+   - `hold_bars`: [1, 2, 3, 5, 8]
+
+**Key Improvements**:
+- ✅ Minimum trade filters (train ≥ 50, test ≥ 20)
+- ✅ Plateau-based parameter selection (not single best)
+- ✅ Adaptive selection strategy
+- ✅ Core combo tracking
+
+### Implementation
+
+**New Files**:
+- `config/eth_core_params.yaml` - ETH core strategy configuration
+- `docs/ETH_CORE_STRATEGY.md` - Strategy documentation
+- `src/joint_factors/joint_signals.py` - Added `build_eth_core_joint_score_signals()`
+- `scripts/run_eth_core_grid_oos.py` - Grid search + OOS validation
+- `scripts/summarize_eth_core_oos.py` - Results analysis
+
+**Workflow**:
+```bash
+# 1. Run ETH core strategy OOS
+python scripts/run_eth_core_grid_oos.py
+
+# 2. Analyze results
+python scripts/summarize_eth_core_oos.py
+```
+
+**Expected Outputs**:
+- `results/oos/eth_core_train_grid.csv` - Training results (30 configs)
+- `results/oos/eth_core_test_grid.csv` - Test results (plateau subset)
+- `results/oos/eth_core_combo_track.csv` - Core combo tracking
+- `results/oos/eth_core_oos_summary.csv` - Summary statistics
+
+### Success Criteria
+
+**Minimum Requirements**:
+- ✅ Test set mean Sharpe > 0.2
+- ✅ Test set positive Sharpe ratio > 60%
+- ✅ Test set average trades > 30
+- ✅ Test set max drawdown < 30%
+
+**Ideal Goals**:
+- 🎯 Test set mean Sharpe > 0.5
+- 🎯 Test set positive Sharpe ratio > 80%
+- 🎯 Plateau size > 5 configs
+- 🎯 Sharpe degradation < 30%
+
+### Next Steps
+
+If ETH core strategy validates successfully:
+1. **Multi-timeframe**: Test on 1H / 8H / 1D
+2. **Risk management**: Add stop-loss / take-profit
+3. **Position sizing**: Dynamic allocation based on signal strength
+4. **Live simulation**: Paper trading validation
+5. **Other crypto**: Apply to BTC, SOL, etc.
+
+---
+
+**Document Version**: 1.2
 **Last Updated**: 2025-11-19
 

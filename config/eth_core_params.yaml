@@ -1,0 +1,147 @@
+# ETHUSD Core Strategy Parameters
+# Simplified parameter space with fixed optimal weights
+
+# ============================================================================
+# Symbol Configuration
+# ============================================================================
+symbol: "ETHUSD"
+timeframe: "4H"
+description: "ETH core strategy with fixed weights (0.6, -0.3)"
+
+# ============================================================================
+# Fixed Weights (No Grid Search)
+# ============================================================================
+# Based on OOS test results, these weights showed best performance
+w_manip: 0.6   # ManipScore weight (positive = reversal logic)
+w_ofi: -0.3    # OFI weight (negative = filter/adjustment)
+
+# ============================================================================
+# Parameter Search Space
+# ============================================================================
+
+# Z-score threshold for entry signal
+# Lower values = more signals, higher values = higher quality signals
+z_threshold_list: [1.5, 2.0, 2.25, 2.5, 2.75, 3.0]
+
+# Holding period in bars (4H bars)
+# 1 bar = 4 hours, 6 bars = 1 day, 42 bars = 1 week
+hold_bars_list: [1, 2, 3, 5, 8]
+
+# Total configurations: 6 × 5 = 30 (vs 1,224 in full grid)
+
+# ============================================================================
+# Trade Filtering Criteria
+# ============================================================================
+
+# Minimum number of trades required in training set
+# Filters out configurations with insufficient statistical significance
+min_trades_train: 50
+
+# Minimum number of trades required in test set
+# Ensures test results are not based on too few samples
+min_trades_test: 20
+
+# ============================================================================
+# Plateau Strategy Parameters
+# ============================================================================
+
+# Plateau Sharpe fraction threshold
+# Defines "plateau region" as: Sharpe >= plateau_sharpe_frac × Sharpe_max
+# Lower values = larger plateau, more parameters selected
+# Higher values = smaller plateau, stricter selection
+plateau_sharpe_frac: 0.7
+
+# Alternative: Top K selection
+# If plateau is too large (> 2×top_k), use top K instead
+top_k: 10
+
+# Selection strategy: 'plateau', 'top_k', or 'adaptive'
+# - 'plateau': Use plateau region only
+# - 'top_k': Use top K parameters only
+# - 'adaptive': Use plateau if size <= 2×top_k, otherwise use top_k
+selection_strategy: 'adaptive'
+
+# ============================================================================
+# OOS Time Splits
+# ============================================================================
+
+# Training period (parameter optimization)
+train_start: "2017-12-11"  # ETH data starts here
+train_end:   "2020-12-31"  # 3 years of training data
+
+# Test period (out-of-sample validation)
+test_start:  "2021-01-01"  # Post-COVID market regime
+test_end:    "2025-10-08"  # ETH data ends here (5 years of test data)
+
+# ============================================================================
+# Backtest Configuration
+# ============================================================================
+
+# Transaction cost in basis points (1 bp = 0.01%)
+cost_bps: 5.0
+
+# Initial capital (for return calculation)
+initial_capital: 10000.0
+
+# Signal direction
+# 'reversal': ManipScore high → short, ManipScore low → long
+# 'momentum': ManipScore high → long, ManipScore low → short
+direction: 'reversal'
+
+# ============================================================================
+# Core Combo Tracking
+# ============================================================================
+
+# Track specific parameter combination regardless of plateau selection
+# This is the best performing combo from previous OOS test
+core_combo_track:
+  z_threshold: 2.5
+  hold_bars: 3
+  description: "Best performing combo from initial OOS test"
+
+# ============================================================================
+# Output Configuration
+# ============================================================================
+
+# Output directory for results
+output_dir: "results/oos"
+
+# Output file names
+output_files:
+  train_grid: "eth_core_train_grid.csv"
+  test_grid: "eth_core_test_grid.csv"
+  core_combo_track: "eth_core_combo_track.csv"
+  oos_summary: "eth_core_oos_summary.csv"
+
+# ============================================================================
+# Logging Configuration
+# ============================================================================
+
+# Log level: DEBUG, INFO, WARNING, ERROR
+log_level: "INFO"
+
+# Log file
+log_file: "results/logs/eth_core_strategy.log"
+
+# ============================================================================
+# Performance Thresholds
+# ============================================================================
+
+# Minimum acceptable Sharpe ratio in test set
+min_test_sharpe: 0.2
+
+# Maximum acceptable drawdown in test set (as decimal, e.g., 0.3 = 30%)
+max_test_drawdown: 0.3
+
+# Minimum win rate in test set (as decimal, e.g., 0.45 = 45%)
+min_test_winrate: 0.40
+
+# ============================================================================
+# Notes
+# ============================================================================
+# 1. This configuration focuses on ETHUSD only, the best performing symbol
+# 2. Weights are fixed at (0.6, -0.3) based on previous OOS results
+# 3. Parameter space reduced from 1,224 to 30 to reduce overfitting
+# 4. Minimum trade filters ensure statistical significance
+# 5. Plateau strategy selects robust parameter regions, not single best point
+

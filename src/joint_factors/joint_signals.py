@@ -270,3 +270,130 @@ def generate_joint_signal_grid(
 
     return results
 
+
+def build_joint_score_signals(
+    df: pd.DataFrame,
+    weight_manip: float = 1.0,
+    weight_ofi: float = 0.0,
+    composite_z_entry: float = 2.0,
+    direction: str = 'reversal',
+) -> pd.DataFrame:
+    """
+    Convenience function to build Score mode signals with direct parameters
+
+    This is a wrapper around generate_score_signal() that accepts direct parameters
+    instead of a config object, making it easier to use in scripts.
+
+    Args:
+        df: Merged DataFrame with ManipScore_z and OFI_z
+        weight_manip: Weight for ManipScore_z (default: 1.0)
+        weight_ofi: Weight for OFI_z (default: 0.0)
+        composite_z_entry: Z-score threshold for entry (default: 2.0)
+        direction: Signal direction - 'reversal' or 'continuation' (default: 'reversal')
+
+    Returns:
+        DataFrame with signal columns added
+
+    Example:
+        >>> df_signals = build_joint_score_signals(
+        ...     df,
+        ...     weight_manip=0.6,
+        ...     weight_ofi=-0.3,
+        ...     composite_z_entry=2.0
+        ... )
+    """
+    config = ScoreSignalConfig(
+        weight_manip=weight_manip,
+        weight_ofi=weight_ofi,
+        composite_z_entry=composite_z_entry,
+        direction=direction,
+        holding_bars=1,  # Will be overridden by backtest engine
+    )
+
+    return generate_score_signal(df, config)
+
+
+def build_eth_core_joint_score_signals(
+    df: pd.DataFrame,
+    w_manip: float,
+    w_ofi: float,
+    z_threshold: float,
+) -> pd.DataFrame:
+    """
+    ETH Core Strategy: Build joint score signals with fixed weights
+
+    This function implements the simplified ETH core strategy:
+    - Fixed weights: w_manip and w_ofi (typically 0.6 and -0.3)
+    - Joint score: w_manip * ManipScore_z + w_ofi * OFI_z
+    - Entry: when |joint_score| >= z_threshold
+    - Direction: Based on ManipScore_z (reversal logic)
+      - ManipScore_z > 0 → signal = -1 (short)
+      - ManipScore_z < 0 → signal = +1 (long)
+
+    Args:
+        df: DataFrame with 'ManipScore_z' and 'OFI_z' columns
+        w_manip: Weight for ManipScore (e.g., 0.6)
+        w_ofi: Weight for OFI (e.g., -0.3)
+        z_threshold: Threshold for |joint_score| to trigger entry
+
+    Returns:
+        DataFrame (copy) with added columns:
+        - 'joint_score_core': The weighted composite score
+        - 'signal_eth_core': Trading signal (-1, 0, +1)
+
+    Note:
+        - Does not modify the input DataFrame
+        - Returns a copy with new columns added
+        - Uses reversal logic: high ManipScore → short
+
+    Example:
+        >>> df_signals = build_eth_core_joint_score_signals(
+        ...     df,
+        ...     w_manip=0.6,
+        ...     w_ofi=-0.3,
+        ...     z_threshold=2.0
+        ... )
+    """
+    # TODO: Verify column names match your actual data
+    # Expected columns: 'ManipScore_z', 'OFI_z'
+
+    df_result = df.copy()
+
+    # Check required columns
+    required_cols = ['ManipScore_z', 'OFI_z']
+    missing_cols = [col for col in required_cols if col not in df_result.columns]
+    if missing_cols:
+        raise ValueError(f"Missing required columns: {missing_cols}")
+
+    # Calculate joint score
+    df_result['joint_score_core'] = (
+        w_manip * df_result['ManipScore_z'] +
+        w_ofi * df_result['OFI_z']
+    )
+
+    # Initialize signal column
+    df_result['signal_eth_core'] = 0
+
+    # Generate signals based on joint score threshold and ManipScore direction
+    # Entry condition: |joint_score| >= z_threshold
+    entry_mask = df_result['joint_score_core'].abs() >= z_threshold
+
+    # Direction based on ManipScore_z (reversal logic)
+    # ManipScore_z > 0 → market pushed up → expect reversal → SHORT (-1)
+    # ManipScore_z < 0 → market pushed down → expect reversal → LONG (+1)
+    df_result.loc[entry_mask & (df_result['ManipScore_z'] > 0), 'signal_eth_core'] = -1
+    df_result.loc[entry_mask & (df_result['ManipScore_z'] < 0), 'signal_eth_core'] = 1
+
+    # Log signal statistics
+    n_signals = (df_result['signal_eth_core'] != 0).sum()
+    n_long = (df_result['signal_eth_core'] == 1).sum()
+    n_short = (df_result['signal_eth_core'] == -1).sum()
+    signal_pct = 100.0 * n_signals / len(df_result) if len(df_result) > 0 else 0
+
+    logger.info(
+        f"ETH Core signals generated: {n_signals} total ({signal_pct:.2f}%), "
+        f"{n_long} long, {n_short} short | "
+        f"weights=({w_manip:.2f}, {w_ofi:.2f}), z_threshold={z_threshold:.2f}"
+    )
+
+    return df_result

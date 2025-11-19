@@ -69,6 +69,27 @@ python scripts/run_score_oos_per_symbol.py --symbol BTCUSD
 python scripts/summarize_oos_results.py
 ```
 
+#### 4. Run ETH Core Strategy (Simplified & Optimized)
+
+**New in v1.2**: Based on OOS results, we developed a simplified strategy focused on ETHUSD with fixed optimal weights.
+
+```bash
+# Run ETH core strategy grid search + OOS validation
+python scripts/run_eth_core_grid_oos.py
+
+# Analyze ETH core strategy results
+python scripts/summarize_eth_core_oos.py
+```
+
+**Key improvements**:
+- ✅ Fixed weights: `w_manip=0.6, w_ofi=-0.3` (best from OOS)
+- ✅ Reduced parameter space: 30 configs (vs 1,224)
+- ✅ Focus on ETHUSD only (best performing symbol)
+- ✅ Minimum trade filters for statistical significance
+- ✅ Plateau-based parameter selection
+
+See [docs/ETH_CORE_STRATEGY.md](docs/ETH_CORE_STRATEGY.md) for details.
+
 ## 📁 Project Structure
 
 ```
@@ -78,7 +99,8 @@ manip-ofi-joint-analysis/
 │   ├── symbols.yaml            # Symbol definitions
 │   ├── joint_params.yaml       # Strategy parameters (coarse)
 │   ├── joint_params_fine.yaml  # Strategy parameters (fine grid)
-│   └── oos_splits.yaml         # Out-of-sample time splits
+│   ├── oos_splits.yaml         # Out-of-sample time splits
+│   └── eth_core_params.yaml    # ETH core strategy parameters (v1.2)
 │
 ├── src/                        # Source code
 │   ├── utils/                  # Utility modules
@@ -88,7 +110,7 @@ manip-ofi-joint-analysis/
 │   ├── joint_data/            # Data loading
 │   │   └── loader.py          # Merged data loader
 │   ├── joint_factors/         # Factor computation
-│   │   └── joint_signals.py   # Signal generation (Filter & Score modes)
+│   │   └── joint_signals.py   # Signal generation (Filter, Score, ETH Core)
 │   ├── analysis/              # Analysis modules
 │   │   ├── performance.py     # Performance metrics
 │   │   └── oos_plateau_analysis.py  # OOS plateau analysis
@@ -105,7 +127,9 @@ manip-ofi-joint-analysis/
 │   ├── run_score_oos_per_symbol.py    # OOS for single symbol (Score)
 │   ├── run_score_oos_all.py           # OOS for all symbols (Score)
 │   ├── summarize_oos_results.py       # OOS summary with plateau analysis
-│   └── run_filter_oos_per_symbol.py   # OOS skeleton (Filter mode)
+│   ├── run_filter_oos_per_symbol.py   # OOS skeleton (Filter mode)
+│   ├── run_eth_core_grid_oos.py       # ETH core strategy OOS (v1.2)
+│   └── summarize_eth_core_oos.py      # ETH core strategy summary (v1.2)
 │
 ├── results/                    # Results directory
 │   ├── backtests/             # Grid search results
@@ -113,7 +137,8 @@ manip-ofi-joint-analysis/
 │   └── logs/                  # Log files
 │
 ├── docs/                       # Documentation
-│   └── JOINT_METHOD.md        # Methodology documentation
+│   ├── JOINT_METHOD.md        # Methodology documentation
+│   └── ETH_CORE_STRATEGY.md   # ETH core strategy documentation (v1.2)
 │
 ├── PROGRESS.md                 # Project progress report
 ├── CHANGELOG.md                # Version changelog

@@ -2,44 +2,50 @@
 # Defines train/test periods for each symbol
 
 symbols:
-  BTCUSD:
-    timeframe: "4H"
-    train_start: "2017-01-01"
-    train_end:   "2020-12-31"
-    test_start:  "2021-01-01"
-    test_end:    "2025-12-31"
-    description: "BTC: 4 years train (2017-2020), 5 years test (2021-2025)"
+  # BTCUSD: Data only goes to 2020-12-31, insufficient for OOS testing
+  # Commented out - no test set available
+  # BTCUSD:
+  #   timeframe: "4H"
+  #   train_start: "2017-05-07"
+  #   train_end:   "2019-06-30"
+  #   test_start:  "2019-07-01"
+  #   test_end:    "2020-12-31"
+  #   description: "BTC: Limited data, train/test within 2017-2020"
 
   ETHUSD:
     timeframe: "4H"
-    train_start: "2017-01-01"
+    # Actual data: 2017-12-11 to 2025-10-08
+    train_start: "2017-12-11"
     train_end:   "2020-12-31"
     test_start:  "2021-01-01"
-    test_end:    "2025-12-31"
-    description: "ETH: 4 years train (2017-2020), 5 years test (2021-2025)"
+    test_end:    "2025-10-08"
+    description: "ETH: 3 years train (2018-2020), 5 years test (2021-2025)"
 
   XAUUSD:
     timeframe: "4H"
+    # Actual data: 2010-01-01 to 2025-10-09
     train_start: "2010-01-01"
     train_end:   "2018-12-31"
     test_start:  "2019-01-01"
-    test_end:    "2025-12-31"
+    test_end:    "2025-10-09"
     description: "Gold: 9 years train (2010-2018), 7 years test (2019-2025)"
 
   XAGUSD:
     timeframe: "4H"
+    # Actual data: 2010-01-01 to 2025-10-10
     train_start: "2010-01-01"
     train_end:   "2018-12-31"
     test_start:  "2019-01-01"
-    test_end:    "2025-12-31"
+    test_end:    "2025-10-10"
     description: "Silver: 9 years train (2010-2018), 7 years test (2019-2025)"
 
   EURUSD:
     timeframe: "4H"
+    # Actual data: 2010-01-01 to 2025-10-03
     train_start: "2010-01-01"
     train_end:   "2018-12-31"
     test_start:  "2019-01-01"
-    test_end:    "2025-12-31"
+    test_end:    "2025-10-03"
     description: "EUR/USD: 9 years train (2010-2018), 7 years test (2019-2025)"
 
 # Configuration notes:

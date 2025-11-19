@@ -46,6 +46,8 @@ def subset_df_by_date(
     """
     Filter DataFrame by date range
 
+    Handles timezone-aware and timezone-naive datetimes correctly.
+
     Args:
         df: Input DataFrame
         start_date: Start date (inclusive), format: 'YYYY-MM-DD'
@@ -57,22 +59,45 @@ def subset_df_by_date(
     """
     df_filtered = df.copy()
 
-    # Ensure time column is datetime
-    if time_col in df_filtered.columns:
-        if not pd.api.types.is_datetime64_any_dtype(df_filtered[time_col]):
-            df_filtered[time_col] = pd.to_datetime(df_filtered[time_col])
-    elif df_filtered.index.name == time_col or time_col == 'index':
-        # Time is in index
-        if not pd.api.types.is_datetime64_any_dtype(df_filtered.index):
-            df_filtered.index = pd.to_datetime(df_filtered.index)
-    else:
+    # Determine if time is in column or index
+    time_in_column = time_col in df_filtered.columns
+    time_in_index = (df_filtered.index.name == time_col or
+                     time_col == 'index' or
+                     isinstance(df_filtered.index, pd.DatetimeIndex))
+
+    if not time_in_column and not time_in_index:
         logger.warning(f"Time column '{time_col}' not found, skipping date filtering")
         return df_filtered
+
+    # Get the time series (column or index)
+    if time_in_column:
+        time_series = df_filtered[time_col]
+        if not pd.api.types.is_datetime64_any_dtype(time_series):
+            df_filtered[time_col] = pd.to_datetime(time_series)
+            time_series = df_filtered[time_col]
+    else:
+        time_series = df_filtered.index
+        if not pd.api.types.is_datetime64_any_dtype(time_series):
+            df_filtered.index = pd.to_datetime(time_series)
+            time_series = df_filtered.index
+
+    # Check if time series is timezone-aware
+    is_tz_aware = hasattr(time_series, 'dt') and time_series.dt.tz is not None
+    if not hasattr(time_series, 'dt'):  # It's an index
+        is_tz_aware = time_series.tz is not None
 
     # Apply filters
     if start_date is not None:
         start_dt = pd.to_datetime(start_date)
-        if time_col in df_filtered.columns:
+        # Make start_dt timezone-aware if needed
+        if is_tz_aware:
+            if hasattr(time_series, 'dt'):
+                tz = time_series.dt.tz
+            else:
+                tz = time_series.tz
+            start_dt = start_dt.tz_localize(tz)
+
+        if time_in_column:
             df_filtered = df_filtered[df_filtered[time_col] >= start_dt]
         else:
             df_filtered = df_filtered[df_filtered.index >= start_dt]
@@ -80,7 +105,15 @@ def subset_df_by_date(
 
     if end_date is not None:
         end_dt = pd.to_datetime(end_date)
-        if time_col in df_filtered.columns:
+        # Make end_dt timezone-aware if needed
+        if is_tz_aware:
+            if hasattr(time_series, 'dt'):
+                tz = time_series.dt.tz
+            else:
+                tz = time_series.tz
+            end_dt = end_dt.tz_localize(tz)
+
+        if time_in_column:
             df_filtered = df_filtered[df_filtered[time_col] <= end_dt]
         else:
             df_filtered = df_filtered[df_filtered.index <= end_dt]
